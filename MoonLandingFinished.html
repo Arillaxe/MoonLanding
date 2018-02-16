@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Moon Landing</title>
+	<link rel="stylesheet" type="text/css" href="css/main.css">
+</head>
+<body>
+<canvas></canvas>
+<div class="contacts">
+	<p>Шабутов Бекир</p>
+	<p>ПИ-12</p>
+</div>
+<div class="wrapper">
+	<p>Посадка на луну</p>
+	<div class="menuPanel">
+		<div class="panels">
+			<div class="props">
+				<p>Характеристики корабля</p>
+				Масса корабля (кг): <input type="number" name="" value="70200" id="mass">
+				Масса топлива (кг): <input type="number" name="" value="23400" id="fuel">
+				Скорость газа (м/c): <input type="number" name="" value="30000" id="gasSpeed">
+				Расход топлива за еденицу времени (кг): <input type="number" name="" value="1000" id="fuelPerSecond">
+				G (м/c^2): <input type="number" name="" value="1.6" id="G">
+			</div>
+			<div class="conditions">
+				<p>Услови посадки</p>
+				Максимальная горизонтальная скорость при посадке (м/c): <input type="number" name="" value="7" id="maxX">
+				Максимальная вертикальная скорость при посадке (м/c): <input type="number" name="" value="7" id="maxY">
+				Максимально допустимый для посадки угол поверхности: <input type="number" name="" value="20" id="maxAngle">
+				Максимально допустимая разница между углами коробля и поверхности: <input type="number" name="" value="3" id="maxDiffAngle">
+			</div>
+		</div>
+		<button  id="startBtn">Начать</button>
+	</div>
+
+</div>
+<script type="text/javascript" src="js/utils.js"></script>
+<script type="text/javascript" src="js/input.js"></script>
+<script type="text/javascript" src="js/vector.js"></script>
+<script type="text/javascript" src="js/ship.js"></script>
+<script type="text/javascript" src="js/ground.js"></script>
+<script type="text/javascript" src="js/animation.js"></script>
+<script type="text/javascript" src="js/animator.js"></script>
+<script type="text/javascript">
+var canvasDOM = document.getElementsByTagName('canvas')[0];
+var ctx = canvasDOM.getContext('2d');
+
+var massDOM = document.getElementById("mass");
+var fuelDOM = document.getElementById("fuel");
+var gasSpeedDOM = document.getElementById("gasSpeed");
+var fuelPerSecondDOM = document.getElementById("fuelPerSecond");
+var GDOM = document.getElementById("G");
+var startBtnDOM = document.getElementById("startBtn");
+var maxXDOM = document.getElementById("maxX");
+var maxYDOM = document.getElementById("maxY");
+var maxAngleDOM = document.getElementById("maxAngle");
+var maxDiffAngleDOM = document.getElementById("maxDiffAngle");
+var wrapperDOM = document.getElementsByClassName("wrapper")[0];
+
+startBtnDOM.addEventListener("click", function(){
+	start();
+	wrapperDOM.style.display = "none";
+});
+
+var WIDTH = canvasDOM.width = window.visualViewport.width;
+var HEIGHT = canvasDOM.height = window.visualViewport.height;
+
+var simulate = false;
+var G = 1.6;
+var debug = false;
+
+ctx.strokeStyle = "white";
+ctx.lineWidth = 2;
+
+var sprite = new Image();
+sprite.src = "res/ship.png";
+
+var bg = new Image();
+bg.src = "res/bg.jpg";
+
+var exploImg = new Image();
+exploImg.src = "res/explosion.png";
+
+var thrusterImg = new Image();
+thrusterImg.src = "res/thruster.png";
+
+var lastTime = Date.now();
+var deltaTime = 0;
+
+var exploAnim = new Animation(exploImg, new Vector(9, 9), new Vector(0, 0), new Vector(0, 0), 0, .5, false);
+var thrusterAnim = new Animation(thrusterImg, new Vector(4, 5), new Vector(0, 0), new Vector(0, 30), 0, .5, true);
+
+var animStates = function(vars){
+	if(vars.destroyed){
+		this.switchAnim(0);
+	}else if(!vars.landed){
+		this.switchAnim(1);
+		this.current.alive = vars.thursting;
+		this.current.angle = vars.angle;
+	}
+	if(vars.landed) this.alive = false;
+	this.current.pos = vars.pos;
+}
+
+var shipAnimator = new Animator([exploAnim, thrusterAnim], 1, animStates);
+
+var ground = getGround(20, WIDTH, HEIGHT - 100, HEIGHT - 120);
+
+var ship = new Ship(new Vector(WIDTH / 2, 75), 0, 0, 0, 0, new Vector(0, 0), 0, 0, sprite, shipAnimator);
+
+function tick(){
+	deltaTime = (Date.now() - lastTime) / 1000;
+	lastTime = Date.now();
+	ship.input();
+	if(simulate){
+		ship.physics(deltaTime);
+	}
+
+	ctx.drawImage(bg, 0, 0, WIDTH, HEIGHT);
+	ship.chunk = drawGround(ctx, ground, ship.pos.x);
+	ship.draw();
+
+	if(simulate){
+		ship.drawHUD();
+	}
+
+	if(ship.destroyed){
+		ctx.font = "45px Arial";
+		ctx.fillStyle = "white";
+		ctx.textAlign = "center";	
+		ctx.fillText("Вы разбились!", WIDTH / 2, HEIGHT / 2);
+	}else if(ship.landed){
+		ctx.font = "45px Arial";
+		ctx.textAlign = "center";
+		ctx.fillStyle = "white";
+		ctx.fillText("Вы успешно посадили корабль!", WIDTH / 2, HEIGHT / 2);
+	}
+
+	requestAnimationFrame(tick);
+}
+
+function start(){
+	G = parseFloat(GDOM.value);
+	simulate = true;
+	ship.mass = parseFloat(massDOM.value);
+	ship.fuel = parseFloat(fuelDOM.value);
+	ship.initialFuel = ship.fuel;
+	ship.fuelPerSecond = parseFloat(fuelPerSecondDOM.value);
+	ship.gasSpeed = parseFloat(gasSpeedDOM.value);
+	ship.maxLandSpeed = new Vector(parseFloat(maxXDOM.value), parseFloat(maxYDOM.value));
+	ship.maxLandingAngle = parseFloat(maxAngle.value);
+	ship.maxLandingDiffAngle = parseFloat(maxDiffAngle.value);
+}
+
+tick();
+</script>
+</body>
+</html>
