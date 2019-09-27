@@ -6,7 +6,7 @@ Use arrows to navigate the ship.
 
 You can control physics parameters and landing conditions.
 
-## Instalation
+## Installation
 ```
 npm i
 ```
