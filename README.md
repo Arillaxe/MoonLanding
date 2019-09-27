@@ -13,6 +13,6 @@ npm i
 
 ## Start
 ```
-npm start PORT={port} // Default port 80
+npm start PORT={port} # Default port 80
 ```
 
